@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using WorkoutTracker.Application.Common.Interfaces;
 using WorkoutTracker.Application.Workouts.DTOs;
 using WorkoutTracker.Application.Workouts.Interfaces;
@@ -23,11 +23,21 @@ namespace WorkoutTracker.Application.Workouts.Services
             return _currentUserService.UserId ?? throw new UnauthorizedAccessException("Korisnik nije autentifikovan");
         }
 
-        private static void ValidateWorkoutParameters(int duration, int difficulty, int fatigue)
+        private static void ValidateWorkoutParameters(ExerciseType exerciseType, int duration, int caloriesBurned, int difficulty, int fatigue, string? notes)
         {
+            if (!Enum.IsDefined(typeof(ExerciseType), exerciseType))
+            {
+                throw new ArgumentException("Nevalidna vrsta vezbe.");
+            }
+
             if (duration <= 0)
             {
                 throw new ArgumentException("Trajanje treninga mora biti vece od 0 minuta.");
+            }
+
+            if (caloriesBurned < 0)
+            {
+                throw new ArgumentException("Potrosene kalorije ne mogu biti negativne.");
             }
 
             if (difficulty < 1 || difficulty > 10)
@@ -35,16 +45,21 @@ namespace WorkoutTracker.Application.Workouts.Services
                 throw new ArgumentOutOfRangeException(nameof(difficulty), "Tezina treninga mora biti izmedju 1 i 10.");
             }
 
-            if(fatigue < 1 || fatigue > 10)
+            if (fatigue < 1 || fatigue > 10)
             {
-                throw new ArgumentOutOfRangeException(nameof(fatigue), "Nivo umora mora biti izmedju 1 i 10");
+                throw new ArgumentOutOfRangeException(nameof(fatigue), "Nivo umora mora biti izmedju 1 i 10.");
+            }
+
+            if (notes?.Length > 500)
+            {
+                throw new ArgumentException("Beleske ne mogu biti duze od 500 karaktera.");
             }
         }
 
         public async Task<WorkoutDto> CreateAsync(CreateWorkoutDto dto, CancellationToken ct = default)
         {
             var currentUserId = GetCurrentUserId();
-            ValidateWorkoutParameters(dto.DurationMinutes, dto.Difficulty, dto.Fatigue);
+            ValidateWorkoutParameters(dto.ExerciseType, dto.DurationMinutes, dto.CaloriesBurned, dto.Difficulty, dto.Fatigue, dto.Notes);
 
             var workout = new Workout
             {
@@ -137,19 +152,20 @@ namespace WorkoutTracker.Application.Workouts.Services
             var currentUserId = GetCurrentUserId();
 
             var workout = await _context.Workouts
-                .FirstOrDefaultAsync(w => w.Id == id && w.UserId == currentUserId);
+                .FirstOrDefaultAsync(w => w.Id == id && w.UserId == currentUserId, ct);
 
             if (workout == null) return false;
-            ValidateWorkoutParameters(dto.DurationMinutes, dto.Difficulty, dto.Fatigue);
+            ValidateWorkoutParameters(dto.ExerciseType, dto.DurationMinutes, dto.CaloriesBurned, dto.Difficulty, dto.Fatigue, dto.Notes);
 
             workout.ExerciseType = dto.ExerciseType;
             workout.DurationMinutes = dto.DurationMinutes;
+            workout.CaloriesBurned = dto.CaloriesBurned;
             workout.Difficulty = dto.Difficulty;
             workout.Fatigue = dto.Fatigue;
             workout.Notes = dto.Notes;
             workout.WorkoutDate = DateTime.SpecifyKind(dto.WorkoutDate, DateTimeKind.Utc);
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(ct);
             return true;
         }
 
@@ -161,12 +177,12 @@ namespace WorkoutTracker.Application.Workouts.Services
             var currentUserId = GetCurrentUserId();
 
             var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var endDate = startDate.AddMonths(1);
             var daysInMonth = DateTime.DaysInMonth(year, month);
-            var endDate = new DateTime(year, month, daysInMonth, 23, 59, 59, 999, DateTimeKind.Utc);
 
             var workouts = await _context.Workouts
                 .AsNoTracking()
-                .Where(w => w.UserId == currentUserId && w.WorkoutDate >= startDate && w.WorkoutDate <= endDate)
+                .Where(w => w.UserId == currentUserId && w.WorkoutDate >= startDate && w.WorkoutDate < endDate)
                 .ToListAsync(ct);
 
             var weeklyBreakdown = new List<WeeklyStatsDto>();

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WorkoutTracker.Application.Workouts.DTOs;
 using WorkoutTracker.Application.Workouts.Interfaces;
@@ -25,7 +25,7 @@ namespace WorkoutTracker.API.Controllers
         }
 
         [HttpGet("{id:guid}")]
-        public async Task<ActionResult<WorkoutDto?>> GetById(Guid id, CancellationToken ct = default)
+        public async Task<ActionResult<WorkoutDto>> GetById(Guid id, CancellationToken ct = default)
         {
             var workout = await _workoutService.GetByIdAsync(id, ct);
             if (workout == null)
@@ -34,41 +34,19 @@ namespace WorkoutTracker.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<WorkoutDto>> Create([FromBody]CreateWorkoutDto dto, CancellationToken ct = default)
+        public async Task<ActionResult<WorkoutDto>> Create([FromBody] CreateWorkoutDto dto, CancellationToken ct = default)
         {
-            try
-            {
-                var createdWorkout = await _workoutService.CreateAsync(dto, ct);
-                return CreatedAtAction(nameof(GetById), new { id = createdWorkout.Id }, createdWorkout);
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var createdWorkout = await _workoutService.CreateAsync(dto, ct);
+            return CreatedAtAction(nameof(GetById), new { id = createdWorkout.Id }, createdWorkout);
         }
 
         [HttpPut("{id:guid}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateWorkoutDto dto, CancellationToken ct = default)
         {
-            try
-            {
-                var updated = await _workoutService.UpdateAsync(id, dto, ct);
-                if (!updated)
-                    return NotFound(new { message = "Trening nije pronadjen ili nemate pravo izmene."});
-                return NoContent();
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var updated = await _workoutService.UpdateAsync(id, dto, ct);
+            if (!updated)
+                return NotFound(new { message = "Trening nije pronadjen ili nemate pravo izmene." });
+            return NoContent();
         }
 
         [HttpDelete("{id:guid}")]
@@ -76,9 +54,7 @@ namespace WorkoutTracker.API.Controllers
         {
             var deleted = await _workoutService.DeleteAsync(id, ct);
             if (!deleted)
-            {
                 return NotFound(new { message = "Trening nije pronadjen ili nemate pravo brisanja." });
-            }
             return NoContent();
         }
 
@@ -88,15 +64,8 @@ namespace WorkoutTracker.API.Controllers
             [FromQuery] int month,
             CancellationToken ct)
         {
-            try
-            {
-                var stats = await _workoutService.GetMonthlyStatsAsync(year, month, ct);
-                return Ok(stats);
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var stats = await _workoutService.GetMonthlyStatsAsync(year, month, ct);
+            return Ok(stats);
         }
     }
 }

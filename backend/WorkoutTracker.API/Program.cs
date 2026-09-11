@@ -1,8 +1,10 @@
 using WorkoutTracker.Infrastructure;
+using WorkoutTracker.Infrastructure.Persistence;
+using WorkoutTracker.API.Middleware;
 using Microsoft.OpenApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-
 
 builder.Services.AddControllers();
 builder.Services.AddInfrastructure(builder.Configuration);
@@ -53,6 +55,8 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -68,5 +72,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<WorkoutTrackerDbContext>();
+    db.Database.Migrate();
+}
 
 app.Run();

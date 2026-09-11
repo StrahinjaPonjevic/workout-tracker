@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using WorkoutTracker.Domain.Entities;
 
@@ -27,7 +27,7 @@ namespace WorkoutTracker.Infrastructure.Persistence.Configurations
                 .IsRequired();
 
             builder.Property(w => w.Notes)
-                .HasMaxLength(100);
+                .HasMaxLength(500);
 
             builder.Property(w => w.WorkoutDate)
                 .IsRequired();

@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -19,7 +19,8 @@ namespace WorkoutTracker.Infrastructure.Identity
 
         public string GenerateToken(User user)
         {
-            var secret = _configuration["JwtSettings:Secret"];
+            var secret = _configuration["JwtSettings:Secret"] 
+                ?? throw new InvalidOperationException("JwtSettings:Secret nije konfigurisan.");
             var issuer = _configuration["JwtSettings:Issuer"];
             var audience = _configuration["JwtSettings:Audience"];
             var expiryMinutes = int.Parse(_configuration["JwtSettings:ExpiryMinutes"] ?? "1440");
