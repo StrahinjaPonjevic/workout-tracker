@@ -49,6 +49,9 @@ namespace WorkoutTracker.Infrastructure
                 };
             });
 
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
+
             return services;
         }
     }
