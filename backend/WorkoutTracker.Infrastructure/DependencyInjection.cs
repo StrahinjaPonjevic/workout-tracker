@@ -7,6 +7,8 @@ using System.Text;
 using WorkoutTracker.Application.Auth.Interfaces;
 using WorkoutTracker.Application.Auth.Services;
 using WorkoutTracker.Application.Common.Interfaces;
+using WorkoutTracker.Application.Workouts.Interfaces;
+using WorkoutTracker.Application.Workouts.Services;
 using WorkoutTracker.Infrastructure.Identity;
 using WorkoutTracker.Infrastructure.Persistence;
 
@@ -51,6 +53,8 @@ namespace WorkoutTracker.Infrastructure
 
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+            services.AddScoped<IWorkoutService, WorkoutService>();
 
             return services;
         }
