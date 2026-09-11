@@ -34,7 +34,7 @@ namespace WorkoutTracker.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<WorkoutDto>> CreateAsync([FromBody]CreateWorkoutDto dto, CancellationToken ct = default)
+        public async Task<ActionResult<WorkoutDto>> Create([FromBody]CreateWorkoutDto dto, CancellationToken ct = default)
         {
             try
             {
@@ -52,7 +52,7 @@ namespace WorkoutTracker.API.Controllers
         }
 
         [HttpPut("{id:guid}")]
-        public async Task<IActionResult> UpdateAsync(Guid id, [FromBody] UpdateWorkoutDto dto, CancellationToken ct = default)
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateWorkoutDto dto, CancellationToken ct = default)
         {
             try
             {
@@ -72,7 +72,7 @@ namespace WorkoutTracker.API.Controllers
         }
 
         [HttpDelete("{id:guid}")]
-        public async Task<IActionResult> DeleteAsync(Guid id, CancellationToken ct = default)
+        public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
         {
             var deleted = await _workoutService.DeleteAsync(id, ct);
             if (!deleted)
@@ -80,6 +80,23 @@ namespace WorkoutTracker.API.Controllers
                 return NotFound(new { message = "Trening nije pronadjen ili nemate pravo brisanja." });
             }
             return NoContent();
+        }
+
+        [HttpGet("stats")]
+        public async Task<ActionResult<MonthlyStatsDto>> GetMonthlyStats(
+            [FromQuery] int year,
+            [FromQuery] int month,
+            CancellationToken ct)
+        {
+            try
+            {
+                var stats = await _workoutService.GetMonthlyStatsAsync(year, month, ct);
+                return Ok(stats);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

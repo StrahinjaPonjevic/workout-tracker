@@ -9,5 +9,7 @@ namespace WorkoutTracker.Application.Workouts.Interfaces
         Task<WorkoutDto> CreateAsync(CreateWorkoutDto dto, CancellationToken ct = default);
         Task<bool> UpdateAsync(Guid id, UpdateWorkoutDto dto, CancellationToken ct = default);
         Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
+
+        Task<MonthlyStatsDto> GetMonthlyStatsAsync(int year, int month, CancellationToken ct);
     }
 }

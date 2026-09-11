@@ -84,7 +84,7 @@ namespace WorkoutTracker.Application.Workouts.Services
             if (workout == null) return false;
 
             _context.Workouts.Remove(workout);
-            _context.SaveChangesAsync(ct);
+            await _context.SaveChangesAsync(ct);
             return true;
         }
 
@@ -151,6 +151,73 @@ namespace WorkoutTracker.Application.Workouts.Services
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<MonthlyStatsDto> GetMonthlyStatsAsync(int year, int month, CancellationToken ct)
+        {
+            if (month < 1 || month > 12)
+                throw new ArgumentOutOfRangeException(nameof(month), "Mesec mora biti izmedju 1 i 12");
+
+            var currentUserId = GetCurrentUserId();
+
+            var startDate = new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var daysInMonth = DateTime.DaysInMonth(year, month);
+            var endDate = new DateTime(year, month, daysInMonth, 23, 59, 59, 999, DateTimeKind.Utc);
+
+            var workouts = await _context.Workouts
+                .AsNoTracking()
+                .Where(w => w.UserId == currentUserId && w.WorkoutDate >= startDate && w.WorkoutDate <= endDate)
+                .ToListAsync(ct);
+
+            var weeklyBreakdown = new List<WeeklyStatsDto>();
+            int currentDay = 1;
+            int weekIndex = 1;
+
+            while (currentDay <= daysInMonth)
+            {
+                int endDayOfWeek = Math.Min(currentDay + 6, daysInMonth);
+                var weekWorkouts = workouts
+                    .Where(w => w.WorkoutDate.Day >= currentDay && w.WorkoutDate.Day <= endDayOfWeek);
+
+                int count = weekWorkouts.Count();
+                int totalDuration = weekWorkouts.Sum(w => w.DurationMinutes);
+                int totalCalories = weekWorkouts.Sum(w => w.CaloriesBurned);
+
+                double avgDifficulty = count > 0 ? Math.Round(weekWorkouts.Average(w => w.Difficulty), 1) : 0;
+                double avgFatigue = count > 0 ? Math.Round(weekWorkouts.Average(w => w.Fatigue), 1) : 0;
+
+                weeklyBreakdown.Add(new WeeklyStatsDto
+                (
+                    WeekNumber: weekIndex,
+                    DateRange: $"{currentDay:D2}.{month:D2} - {endDayOfWeek:D2}.{month:D2}",
+                    TotalWorkouts: count,
+                    TotalDurationMinutes: totalDuration,
+                    TotalCaloriesBurned: totalCalories,
+                    AverageDifficulty: avgDifficulty,
+                    AverageFatigue: avgFatigue
+                ));
+
+                currentDay += 7;
+                weekIndex++;
+            }
+
+            int totalMonthWorkouts = workouts.Count;
+            int totalMonthDuration = workouts.Sum(w => w.DurationMinutes);
+            int totalMonthCalories = workouts.Sum(w => w.CaloriesBurned);
+            double avgMonthDifficulty = totalMonthWorkouts > 0 ? Math.Round(workouts.Average(w => w.Difficulty), 1) : 0;
+            double avgMonthFatigue = totalMonthWorkouts > 0 ? Math.Round(workouts.Average(w => w.Fatigue), 1) : 0;
+
+            return new MonthlyStatsDto
+            (
+                Year: year,
+                Month: month,
+                TotalWorkouts: totalMonthWorkouts,
+                TotalDurationMinutes: totalMonthDuration,
+                TotalCaloriesBurned: totalMonthCalories,
+                AverageDifficulty: avgMonthDifficulty,
+                AverageFatigue: avgMonthFatigue,
+                WeeklyBreakdown: weeklyBreakdown
+            );
         }
     }
 }
