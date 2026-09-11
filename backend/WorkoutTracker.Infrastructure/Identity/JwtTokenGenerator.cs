@@ -21,7 +21,7 @@ namespace WorkoutTracker.Infrastructure.Identity
         {
             var secret = _configuration["JwtSettings:Secret"];
             var issuer = _configuration["JwtSettings:Issuer"];
-            var audience = _configuration["JwtSettings.Audience"];
+            var audience = _configuration["JwtSettings:Audience"];
             var expiryMinutes = int.Parse(_configuration["JwtSettings:ExpiryMinutes"] ?? "1440");
 
 
