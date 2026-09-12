@@ -2,8 +2,8 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { LucideDumbbell, LucideLoader2, LucideAlertCircle } from '@lucide/angular';
 import { AuthService } from '../../../core/services/auth.service';
+import { IconComponent } from '../../../shared/components/icon/icon.component';
 
 @Component({
   selector: 'app-login',
@@ -12,17 +12,15 @@ import { AuthService } from '../../../core/services/auth.service';
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
-    LucideDumbbell,
-    LucideLoader2,
-    LucideAlertCircle
+    IconComponent
   ],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-background px-4 py-12">
       <div class="w-full max-w-md space-y-6">
         <!-- Logo & Header -->
         <div class="text-center space-y-2">
-          <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <svg lucideDumbbell class="w-6 h-6"></svg>
+          <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-xs mb-1">
+            <app-icon name="dumbbell" class="w-6 h-6" />
           </div>
           <h1 class="text-2xl font-bold tracking-tight text-foreground">
             Dobrodošli nazad
@@ -38,7 +36,7 @@ import { AuthService } from '../../../core/services/auth.service';
             <!-- Server Error Alert -->
             @if (errorMessage()) {
               <div class="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive">
-                <svg lucideAlertCircle class="w-4 h-4 mt-0.5 shrink-0"></svg>
+                <app-icon name="alert-circle" class="w-4 h-4 mt-0.5 shrink-0" />
                 <span>{{ errorMessage() }}</span>
               </div>
             }
@@ -93,10 +91,10 @@ import { AuthService } from '../../../core/services/auth.service';
             <button
               type="submit"
               [disabled]="isLoading() || loginForm.invalid"
-              class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              class="w-full inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
             >
               @if (isLoading()) {
-                <svg lucideLoader2 class="w-4 h-4 animate-spin"></svg>
+                <app-icon name="loader" class="w-4 h-4 animate-spin" />
                 <span>Prijavljivanje...</span>
               } @else {
                 <span>Prijavi se</span>
@@ -129,9 +127,9 @@ export class LoginComponent {
     password: ['', [Validators.required]]
   });
 
-  isFieldInvalid(fieldName: 'email' | 'password'): boolean {
-    const field = this.loginForm.get(fieldName);
-    return !!(field && field.invalid && (field.dirty || field.touched));
+  isFieldInvalid(field: 'email' | 'password'): boolean {
+    const control = this.loginForm.get(field);
+    return !!control && control.invalid && (control.dirty || control.touched);
   }
 
   onSubmit(): void {
@@ -150,7 +148,7 @@ export class LoginComponent {
       },
       error: (err) => {
         this.isLoading.set(false);
-        const message = err.error?.message || 'Neuspešna prijava. Proverite podatke i pokušajte ponovo.';
+        const message = err.error?.message || 'Neuspešna prijava. Proverite unete podatke.';
         this.errorMessage.set(message);
       }
     });

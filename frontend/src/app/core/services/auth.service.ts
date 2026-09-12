@@ -44,7 +44,7 @@ export class AuthService {
   private setSession(authRes: AuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, authRes.token);
     const user: User = {
-      id: authRes.id,
+      id: authRes.id || (authRes as any).userId || '',
       username: authRes.username,
       email: authRes.email
     };
@@ -54,11 +54,42 @@ export class AuthService {
 
   private getStoredUser(): User | null {
     const raw = localStorage.getItem(this.USER_KEY);
-    if (!raw) return null;
-    try {
-      return JSON.parse(raw) as User;
-    } catch {
-      return null;
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as User;
+        if (parsed && parsed.username) {
+          return parsed;
+        }
+      } catch {}
     }
+
+    // Fallback: extract username from JWT token directly
+    const token = this.getToken();
+    if (token) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const username =
+            payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] ||
+            payload.name ||
+            payload.unique_name ||
+            'Korisnik';
+          const id =
+            payload['sub'] ||
+            payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
+            '';
+          const email =
+            payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'] ||
+            payload.email ||
+            '';
+          const user: User = { id, username, email };
+          localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+          return user;
+        }
+      } catch {}
+    }
+
+    return null;
   }
 }
