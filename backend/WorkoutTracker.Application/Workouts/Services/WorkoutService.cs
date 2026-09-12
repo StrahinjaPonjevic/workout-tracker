@@ -23,7 +23,7 @@ namespace WorkoutTracker.Application.Workouts.Services
             return _currentUserService.UserId ?? throw new UnauthorizedAccessException("Korisnik nije autentifikovan");
         }
 
-        private static void ValidateWorkoutParameters(ExerciseType exerciseType, int duration, int caloriesBurned, int difficulty, int fatigue, string? notes)
+        private static void ValidateWorkoutParameters(ExerciseType exerciseType, int duration, int caloriesBurned, int difficulty, int fatigue, string? notes, DateTime workoutDate)
         {
             if (!Enum.IsDefined(typeof(ExerciseType), exerciseType))
             {
@@ -54,12 +54,20 @@ namespace WorkoutTracker.Application.Workouts.Services
             {
                 throw new ArgumentException("Beleske ne mogu biti duze od 500 karaktera.");
             }
+
+            var utcDate = workoutDate.Kind == DateTimeKind.Utc
+                ? workoutDate
+                : DateTime.SpecifyKind(workoutDate, DateTimeKind.Utc);
+            if (utcDate > DateTime.UtcNow.AddMinutes(5))
+            {
+                throw new ArgumentException("Datum treninga ne može biti u budućnosti.");
+            }
         }
 
         public async Task<WorkoutDto> CreateAsync(CreateWorkoutDto dto, CancellationToken ct = default)
         {
             var currentUserId = GetCurrentUserId();
-            ValidateWorkoutParameters(dto.ExerciseType, dto.DurationMinutes, dto.CaloriesBurned, dto.Difficulty, dto.Fatigue, dto.Notes);
+            ValidateWorkoutParameters(dto.ExerciseType, dto.DurationMinutes, dto.CaloriesBurned, dto.Difficulty, dto.Fatigue, dto.Notes, dto.WorkoutDate);
 
             var workout = new Workout
             {
@@ -155,7 +163,7 @@ namespace WorkoutTracker.Application.Workouts.Services
                 .FirstOrDefaultAsync(w => w.Id == id && w.UserId == currentUserId, ct);
 
             if (workout == null) return false;
-            ValidateWorkoutParameters(dto.ExerciseType, dto.DurationMinutes, dto.CaloriesBurned, dto.Difficulty, dto.Fatigue, dto.Notes);
+            ValidateWorkoutParameters(dto.ExerciseType, dto.DurationMinutes, dto.CaloriesBurned, dto.Difficulty, dto.Fatigue, dto.Notes, dto.WorkoutDate);
 
             workout.ExerciseType = dto.ExerciseType;
             workout.DurationMinutes = dto.DurationMinutes;

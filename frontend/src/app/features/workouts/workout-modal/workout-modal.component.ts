@@ -1,7 +1,17 @@
 import { Component, EventEmitter, Input, Output, inject, OnChanges, SimpleChanges, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
+
+export const notFutureDateValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  if (!control.value) return null;
+  const selected = new Date(control.value);
+  const now = new Date();
+  if (selected.getTime() > now.getTime() + 2 * 60 * 1000) {
+    return { futureDate: true };
+  }
+  return null;
+};
 import { WorkoutService } from '../../../core/services/workout.service';
 import { CreateWorkoutRequest, ExerciseType, ExerciseTypeLabels, UpdateWorkoutRequest, Workout } from '../../../core/models/workout.models';
 import { IconComponent } from '../../../shared/components/icon/icon.component';
@@ -149,11 +159,18 @@ import { IconComponent } from '../../../shared/components/icon/icon.component';
               <input
                 type="datetime-local"
                 formControlName="workoutDate"
+                [max]="maxDateTime"
                 class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 [class.border-destructive]="isFieldInvalid('workoutDate')"
               />
               @if (isFieldInvalid('workoutDate')) {
-                <p class="text-[11px] text-destructive">Datum i vreme su obavezni.</p>
+                <p class="text-[11px] text-destructive">
+                  @if (form.get('workoutDate')?.errors?.['required']) {
+                    Datum i vreme su obavezni.
+                  } @else if (form.get('workoutDate')?.errors?.['futureDate']) {
+                    Datum treninga ne može biti u budućnosti.
+                  }
+                </p>
               }
             </div>
 
@@ -222,13 +239,17 @@ export class WorkoutModalComponent implements OnChanges {
     { value: ExerciseType.Other, label: ExerciseTypeLabels[ExerciseType.Other] }
   ];
 
+  get maxDateTime(): string {
+    return this.formatDateForInput(new Date());
+  }
+
   readonly form = this.fb.nonNullable.group({
     exerciseType: [ExerciseType.Strength, [Validators.required]],
     durationMinutes: [60, [Validators.required, Validators.min(1)]],
     caloriesBurned: [400, [Validators.required, Validators.min(0)]],
     difficulty: [5, [Validators.required, Validators.min(1), Validators.max(10)]],
     fatigue: [5, [Validators.required, Validators.min(1), Validators.max(10)]],
-    workoutDate: [this.formatDateForInput(new Date()), [Validators.required]],
+    workoutDate: [this.formatDateForInput(new Date()), [Validators.required, notFutureDateValidator]],
     notes: ['', [Validators.maxLength(500)]]
   });
 
